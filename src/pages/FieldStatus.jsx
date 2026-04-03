@@ -1,124 +1,86 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeft, 
-  CheckCircle2, 
-  Zap, 
-  Bot, 
-  BarChart3 
-} from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { cropsAPI, sensorsAPI, recommendationsAPI } from "../api";
 
-const FieldStatus = () => {
+export default function FieldStatus() {
   const navigate = useNavigate();
-  // State for the primary Device toggle
-  const [isDeviceOn, setIsDeviceOn] = useState(false);
-  // State for the secondary Auto Irrigation toggle
-  const [isAutoIrrigation, setIsAutoIrrigation] = useState(false);
+  const [crops, setCrops] = useState([]);
+  const [sensors, setSensors] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) { navigate("/"); return; }
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    try {
+      const [c, s, r] = await Promise.all([
+        cropsAPI.getUserCrops(),
+        sensorsAPI.getLatest(),
+        recommendationsAPI.getHistory(),
+      ]);
+      setCrops(Array.isArray(c) ? c : []);
+      setSensors(s);
+      setRecommendations(Array.isArray(r) ? r.slice(0, 5) : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-green-600">Loading...</div></div>;
 
   return (
-    <div className="min-h-screen bg-[#d1dcd4] flex justify-center">
-      <div className="w-full max-w-md px-4 py-6">
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-green-700 text-white px-6 py-4 flex items-center gap-3">
+        <button onClick={() => navigate("/dashboard")} className="text-white">←</button>
+        <h1 className="text-xl font-bold">Field Status</h1>
+      </nav>
+      <div className="p-4 max-w-2xl mx-auto space-y-4">
         
-        
-        
-
-        {/* MAIN CARD */}
-        <div className="bg-[#f8f9f8] rounded-[32px] shadow-lg p-6 min-h-[500px]">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button 
-              onClick={() => navigate('/field-setup')}
-              className="text-[#2d5a27] hover:bg-green-200 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
-            >
-              <ChevronLeft size={32} />
-            </button>
-            <h1 className="text-2xl font-semibold text-[#2d5a27]">Field Status</h1>
-          </div>
-          <h2 className="text-[#2d5a27] text-2xl font-bold text-center mb-8">My Field</h2>
-
-          <div className="space-y-6">
-            
-            
-
-            
-            {/* 2. Device Status Box (Dynamic) */}
-            <div className="border border-[#2d5a27] rounded-2xl p-4 flex gap-4 bg-white relative">
-            <Zap className="text-[#2d5a27] shrink-0" size={48} />
-            <div className="w-full space-y-3">
-    
-              {/* Primary Device Toggle */}
-              <div className="flex justify-between items-center">
-                <h3 className="text-[#2d5a27] font-bold text-xl">
-                  Device: {isDeviceOn ? 'On' : 'Off'}
-                </h3>
-                <button 
-                  onClick={() => {
-                  // If turning off, also turn off auto-irrigation
-                  if (isDeviceOn) setIsAutoIrrigation(false);
-                  setIsDeviceOn(!isDeviceOn);
-                }}
-                className={`w-11 h-6 rounded-full p-1 transition-colors duration-300 flex items-center ${
-                  isDeviceOn ? 'bg-[#2d5a27]' : 'border border-[#2d5a27]'
-                }`}
-                >
-                <div className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-300 ${
-                 isDeviceOn ? 'translate-x-5 bg-white' : 'translate-x-0 bg-[#2d5a27]'
-                }`} />
-                </button>
-                </div>
-
-            {/* Nested Options - Shows when Device is On */}
-    {isDeviceOn && (
-      <div className="space-y-3 pt-2 border-t border-[#2d5a27]/10 animate-in fade-in duration-300">
-        
-        {/* Auto Irrigation Toggle */}
-        <div className="flex justify-between items-center">
-          <p className="text-[#2d5a27] text-sm font-bold">
-            Auto irrigation: {isAutoIrrigation ? 'On' : 'Off'}
-          </p>
-          <button 
-            onClick={() => setIsAutoIrrigation(!isAutoIrrigation)}
-            className={`w-11 h-6 rounded-full p-1 transition-colors duration-300 flex items-center ${
-              isAutoIrrigation ? 'bg-[#2d5a27]' : 'border border-[#2d5a27]'
-            }`}
-          >
-            <div className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-300 ${
-              isAutoIrrigation ? 'translate-x-5 bg-white' : 'translate-x-0 bg-[#2d5a27]'
-            }`} />
-          </button>
+        {/* Crops */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">My Crops</h2>
+          {crops.length > 0 ? crops.map((crop, i) => (
+            <div key={i} className="border-b last:border-0 py-2">
+              <p className="font-medium text-green-700">{crop.crop_name}</p>
+              <p className="text-sm text-gray-500">Area: {crop.area_acres} acres | Soil: {crop.soil_type}</p>
+              {crop.sowing_date && <p className="text-xs text-gray-400">Sowed: {crop.sowing_date}</p>}
+            </div>
+          )) : <p className="text-gray-400 text-sm">No crops added yet</p>}
         </div>
 
-        {/* View Dashboard Button - Now independent of Auto Irrigation toggle */}
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="w-full mt-2 py-2 px-3 border border-[#2d5a27]/40 rounded-lg flex items-center justify-center gap-2 text-[#2d5a27] hover:bg-green-50 transition-all active:scale-95"
-        >
-          <BarChart3 size={18} />
-          <span className="text-sm underline font-medium">View Dashboard</span>
-        </button>
-      </div>
-    )}
-  </div>
-</div>
-
-            {/* 3. Chatbot Button */}
-            <button 
-              onClick={() => navigate('/chatbot')}
-              className="w-full border border-[#2d5a27] rounded-2xl p-4 flex gap-4 bg-white hover:bg-green-50 transition-all active:scale-[0.98] group text-left"
-            >
-              <Bot className="text-[#2d5a27] shrink-0" size={48} />
-              <div className="flex items-center">
-                <h3 className="text-[#2d5a27] font-bold text-xl leading-tight group-hover:translate-x-1 transition-transform">
-                  Click to talk to our Chatbot
-                </h3>
-              </div>
-            </button>
-
+        {/* Sensors */}
+        {sensors && (
+          <div className="bg-white rounded-xl shadow p-4">
+            <h2 className="text-lg font-semibold text-gray-700 mb-3">Current Readings</h2>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-blue-50 rounded p-2"><span className="text-gray-500">Moisture: </span><strong>{sensors.soil_moisture}%</strong></div>
+              <div className="bg-green-50 rounded p-2"><span className="text-gray-500">Temp: </span><strong>{sensors.temperature}°C</strong></div>
+              <div className="bg-yellow-50 rounded p-2"><span className="text-gray-500">Humidity: </span><strong>{sensors.humidity}%</strong></div>
+              <div className="bg-purple-50 rounded p-2"><span className="text-gray-500">Rain: </span><strong>{sensors.rainfall} mm</strong></div>
+            </div>
           </div>
+        )}
+
+        {/* Recommendation History */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">Recent Recommendations</h2>
+          {recommendations.length > 0 ? recommendations.map((r, i) => (
+            <div key={i} className="border-b last:border-0 py-2">
+              <span className={`text-xs px-2 py-0.5 rounded-full ${r.action === "irrigate" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                {r.action}
+              </span>
+              {r.message && <p className="text-sm text-gray-600 mt-1">{r.message}</p>}
+              {r.created_at && <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString()}</p>}
+            </div>
+          )) : <p className="text-gray-400 text-sm">No recommendations yet</p>}
         </div>
       </div>
     </div>
   );
-};
-
-export default FieldStatus;
+}

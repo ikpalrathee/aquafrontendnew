@@ -1,65 +1,167 @@
-const API_BASE = "https://aquasensebackend-ru2t.onrender.com/api/v1";
+import config from "./config";
 
-export async function getCrops() {
-  const res = await fetch(`${API_BASE}/crops`);
-  if (!res.ok) throw new Error("Failed to fetch crops");
-  return res.json();
+const BASE_URL = config.API_BASE_URL;
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("access_token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
-export async function getdistricts() {
-  const res = await fetch(`${API_BASE}/villages/districts`);
-  if (!res.ok) throw new Error("Failed to fetch districts");
-  return res.json();
-}
 
-export const registerUser = async (userData) => {
-  const response = await fetch(`${API_BASE}/users/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userData),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw data;
+async function handleResponse(res) {
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Request failed" }));
+    throw new Error(error.detail || "Request failed");
   }
+  return res.json();
+}
 
-  return data;
+// AUTH
+export const authAPI = {
+  login: async (phone, password) => {
+    const form = new URLSearchParams();
+    form.append("username", phone);
+    form.append("password", password);
+    const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    });
+    return handleResponse(res);
+  },
+
+  register: async (data) => {
+    const res = await fetch(`${BASE_URL}/api/v1/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  logout: () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+  },
 };
-export async function updateSoilAI(payload) {
-  const res = await fetch(`${API_BASE}/sensors/update-soil-ai`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
 
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.detail || "Soil update failed");
-  }
+// USERS
+export const usersAPI = {
+  getMe: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/users/me`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 
-  return res.json();
-}
-
-export async function selectCropForDevice(payload) {
-  const res = await fetch(
-    `${API_BASE}/sensors/select-crop`,
-    {
+  updateMe: async (data) => {
+    const res = await fetch(`${BASE_URL}/api/v1/users/me`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    }
-  );
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+};
 
-  if (!res.ok) {
-    throw new Error("Failed to select crop");
-  }
+// CROPS
+export const cropsAPI = {
+  getAll: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/crops`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 
-  return res.json();
-}
+  getUserCrops: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/crops/user`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  addCrop: async (data) => {
+    const res = await fetch(`${BASE_URL}/api/v1/crops`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  deleteCrop: async (id) => {
+    const res = await fetch(`${BASE_URL}/api/v1/crops/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// SENSORS
+export const sensorsAPI = {
+  getLatest: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/sensors/latest`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getHistory: async (limit = 24) => {
+    const res = await fetch(`${BASE_URL}/api/v1/sensors/history?limit=${limit}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// RECOMMENDATIONS
+export const recommendationsAPI = {
+  getLatest: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/recommendations/latest`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getHistory: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/recommendations`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// CHATBOT
+export const chatbotAPI = {
+  sendMessage: async (message, language = "en") => {
+    const res = await fetch(`${BASE_URL}/api/v1/chatbot/chat`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ message, language }),
+    });
+    return handleResponse(res);
+  },
+};
+
+// VILLAGES
+export const villagesAPI = {
+  search: async (query) => {
+    const res = await fetch(`${BASE_URL}/api/v1/villages/search?q=${encodeURIComponent(query)}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+export default {
+  auth: authAPI,
+  users: usersAPI,
+  crops: cropsAPI,
+  sensors: sensorsAPI,
+  recommendations: recommendationsAPI,
+  chatbot: chatbotAPI,
+  villages: villagesAPI,
+};

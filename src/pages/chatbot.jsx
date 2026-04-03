@@ -1,113 +1,80 @@
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
-import { ChevronLeft } from "lucide-react";
+import { chatbotAPI } from "../api";
 
-
-export default function ChatBot() {
+export default function Chatbot() {
   const navigate = useNavigate();
+  const [messages, setMessages] = useState([
+    { role: "assistant", text: "Hello! I'm your AquaSense AI assistant. Ask me anything about irrigation, crops, or weather." }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
 
-  // Text input state
-  const [message, setMessage] = useState("");
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // Mic listening state
-  const [listening, setListening] = useState(false);
-
-  // Speech recognition reference
-  const recognitionRef = useRef(null);
-
-  // Start speech-to-text
-  const startListening = () => {
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech recognition not supported in this browser");
-      return;
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
+    setLoading(true);
+    try {
+      const data = await chatbotAPI.sendMessage(userMsg);
+      setMessages((prev) => [...prev, { role: "assistant", text: data.response || data.message || "I'm not sure about that." }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: "assistant", text: "Sorry, I couldn't process that. Please try again." }]);
+    } finally {
+      setLoading(false);
     }
-
-    const recognition = new window.webkitSpeechRecognition();
-    recognition.lang = "en-IN"; // change to "hi-IN" for Hindi
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setListening(true);
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setMessage(transcript);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
   };
 
   return (
-    <div className="min-h-screen bg-green-50 flex justify-center">
-      {/* Phone-sized container */}
-      <div className="w-full max-w-[420px] min-h-screen bg-white shadow-xl flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <nav className="bg-green-700 text-white px-6 py-4 flex items-center gap-3">
+        <button onClick={() => navigate("/dashboard")}>←</button>
+        <h1 className="text-xl font-bold">AquaSense AI</h1>
+      </nav>
 
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-[#2d5a27]">
-          <button
-  onClick={() => navigate("/field-status")}
-  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-green-200 transition"
->
-  <ChevronLeft size={32} className="text-white" />
-</button>
-
-
-          <div className="w-9 h-9 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">
-            🤖
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-w-2xl w-full mx-auto">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl text-sm ${
+              msg.role === "user"
+                ? "bg-green-600 text-white rounded-br-sm"
+                : "bg-white text-gray-700 shadow rounded-bl-sm"
+            }`}>
+              {msg.text}
+            </div>
           </div>
-
-          <h1 className="text-base font-semibold text-white">
-            AI Chatbot
-          </h1>
-        </div>
-
-        {/* Chat area (empty state) */}
-        <div className="flex-1 flex items-center justify-center text-center px-4">
-          <div>
-            <p className="text-green-800 font-medium">No messages yet</p>
-            <p className="text-xs text-green-700 opacity-70 mt-1">
-              Start the conversation by typing or speaking below
-            </p>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white shadow rounded-2xl rounded-bl-sm px-4 py-2 text-sm text-gray-400">Thinking...</div>
           </div>
-        </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
 
-        {/* Input area */}
-        <div className="p-3 border-t flex items-center gap-2">
-
-          {/* Mic button */}
-          <button
-            onClick={startListening}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition
-              ${listening ? "bg-red-500 text-white" : "bg-green-100 text-green-800"}
-            `}
-          >
-            🎤
-          </button>
-
-          {/* Text input */}
+      <div className="p-4 bg-white border-t max-w-2xl w-full mx-auto">
+        <div className="flex gap-2">
           <input
             type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask about irrigation, crops..."
+            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
-
-          {/* Send button (disabled for now) */}
           <button
-            className="bg-green-600 text-white px-4 py-2 rounded-full disabled:opacity-50"
-            disabled={!message}
+            onClick={handleSend}
+            disabled={loading}
+            className="bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-700 disabled:opacity-50"
           >
             ➤
           </button>
-
         </div>
       </div>
     </div>

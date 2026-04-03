@@ -1,201 +1,71 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, MapPin, ClipboardList, ChevronRight } from "lucide-react";
-import { getdistricts, registerUser } from "../api";
+import { authAPI } from "../api";
 
-const CreateAccount = () => {
+export default function CreateAccount() {
   const navigate = useNavigate();
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    password: "",
+    village: "",
+    district: "",
+    state: "Punjab",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [region, setRegion] = useState("");
-  const [district, setdistrict] = useState("");
-  const [role, setRole] = useState("");
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const [districts, setdistricts] = useState([]); // small d
-
-  // 🔥 Fetch districts when Punjab selected
-  useEffect(() => {
-    if (region === "Punjab") {
-      getdistricts()
-        .then((data) => {
-          console.log("district API response:", data);
-          setdistricts(data.districts || data);
-        })
-        .catch((err) => {
-          console.error("district fetch error:", err);
-          setdistricts([]);
-        });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await authAPI.register(form);
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user || {}));
+      navigate("/field-setup");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [region]);
-
-  const handleRegister = async () => {
-  if (!name || !phone || !region || !role) {
-    alert("Please fill all required fields");
-    return;
-  }
-
-  if (region === "Punjab" && !district) {
-    alert("Please select your district");
-    return;
-  }
-
-  if (phone.length !== 10) {
-    alert("Phone number must be exactly 10 digits");
-    return;
-  }
-
-  const stepOneData = {
-    full_name: name,
-    phone_number: phone,
-    village_id: district, // make sure this is numeric
-    role: role.toLowerCase()
   };
 
-  navigate("/field-setup", { state: stepOneData });
-};
   return (
-    <div className="min-h-screen w-full bg-[#d1dcd4] flex items-center justify-center p-4">
-      <div className="bg-[#f2f4f2] w-full max-w-[400px] rounded-[40px] shadow-2xl p-8 flex flex-col items-center border border-white">
-
-        <h1 className="text-[#2d5a27] text-4xl font-extrabold mb-2">AquaSense</h1>
-        <h2 className="text-[#2d5a27] text-2xl font-bold mb-1">
-          Create your account
-        </h2>
-        <p className="text-[#2d5a27] text-sm font-medium mb-8">
-          Enter your details to get started
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-green-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+        <h1 className="text-2xl font-bold text-green-700 mb-6">Create Account</h1>
+        {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {["name", "phone", "password", "village", "district"].map((field) => (
+            <input
+              key={field}
+              name={field}
+              type={field === "password" ? "password" : "text"}
+              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+              value={form[field]}
+              onChange={handleChange}
+              required
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+          ))}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-600 text-white rounded-lg py-2 font-semibold hover:bg-green-700 disabled:opacity-50"
+          >
+            {loading ? "Creating..." : "Create Account"}
+          </button>
+        </form>
+        <p className="mt-4 text-sm text-center text-gray-500">
+          Already have an account?{" "}
+          <span className="text-green-600 cursor-pointer" onClick={() => navigate("/")}>
+            Sign In
+          </span>
         </p>
-
-        <div className="w-full space-y-5">
-
-          {/* Name */}
-          <div>
-            <label className="block text-[#2d5a27] font-bold text-sm mb-1 ml-1">
-              Name
-            </label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={name}
-                onChange={(e) =>
-                  setName(e.target.value.replace(/[^a-zA-Z\s]/g, ""))
-                }
-                placeholder="Your Name"
-                className="w-full bg-white border-2 border-green-800/20 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-[#2d5a27] text-gray-700"
-              />
-            </div>
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="block text-[#2d5a27] font-bold text-sm mb-1 ml-1">
-              Phone Number
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="tel"
-                value={phone}
-                maxLength={10}
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="+91 | 12345 67890"
-                className="w-full bg-white border-2 border-green-800/20 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-[#2d5a27] text-gray-700"
-              />
-            </div>
-          </div>
-
-          {/* Region */}
-          <div>
-            <label className="block text-[#2d5a27] font-bold text-sm mb-1 ml-1">
-              Region
-            </label>
-            <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <select
-                value={region}
-                onChange={(e) => {
-                  setRegion(e.target.value);
-                  setdistrict("");
-                }}
-                className="w-full bg-white border-2 border-green-800/20 rounded-2xl py-3 pl-12 pr-10 focus:outline-none focus:border-[#2d5a27] text-gray-700 appearance-none"
-              >
-                <option value="">Select your region</option>
-                <option value="Punjab">Punjab</option>
-                <option value="Haryana">Haryana</option>
-                <option value="Himachal Pradesh">Himachal Pradesh</option>
-              </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            </div>
-          </div>
-
-          {/* District */}
-          {region === "Punjab" && (
-            <div>
-              <label className="block text-[#2d5a27] font-bold text-sm mb-1 ml-1">
-                District
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <select
-                  value={district}
-                  onChange={(e) => setdistrict(Number(e.target.value))}
-                  className="w-full bg-white border-2 border-green-800/20 rounded-2xl py-3 pl-12 pr-10 focus:outline-none focus:border-[#2d5a27] text-gray-700 appearance-none"
-                >
-                  <option value="">Select your district</option>
-
-                  {districts.map((dist, index) => (
-                    <option key={dist.id} value={dist.id}>
-  {dist.name}
-</option>
-                  ))}
-
-                </select>
-                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              </div>
-            </div>
-          )}
-
-          {/* Role */}
-          <div>
-            <label className="block text-[#2d5a27] font-bold text-sm mb-1 ml-1">
-              Role
-            </label>
-            <div className="relative">
-              <ClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-white border-2 border-green-800/20 rounded-2xl py-3 pl-12 pr-10 focus:outline-none focus:border-[#2d5a27] text-gray-700 appearance-none"
-              >
-                <option value="">Select your role</option>
-                <option value="Farmer">Farmer</option>
-                <option value="Field Supervisor">Field Supervisor</option>
-                <option value="Technician">Technician</option>
-              </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            </div>
-          </div>
-
-        </div>
-
-        <button
-          onClick={handleRegister}
-          className="bg-[#2d5a27] hover:bg-[#1e3d1a] transition-all w-full py-4 rounded-[40px] shadow-lg mt-10"
-        >
-          <div className="text-white font-bold text-2xl uppercase tracking-wider">
-            REGISTER
-          </div>
-          <div className="text-white/90 text-sm font-medium">
-            (पंजीकरण करें)
-          </div>
-        </button>
-
       </div>
     </div>
   );
-};
-
-export default CreateAccount;
+}

@@ -156,6 +156,28 @@ export const villagesAPI = {
   },
 };
 
+// DEVICES
+export const deviceAPI = {
+  // Get existing settings for "Click Here" users
+  getSettings: async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/devices/settings`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  // Save new settings when "Continue" is clicked
+  setupDevices: async (data) => {
+    const res = await fetch(`${BASE_URL}/api/v1/devices/setup`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+};
+
+
 export default {
   auth: authAPI,
   users: usersAPI,
@@ -164,4 +186,5 @@ export default {
   recommendations: recommendationsAPI,
   chatbot: chatbotAPI,
   villages: villagesAPI,
+  devices: deviceAPI, // Add this line
 };

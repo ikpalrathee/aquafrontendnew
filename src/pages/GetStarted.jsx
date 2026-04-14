@@ -1,67 +1,54 @@
-import { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { authAPI } from "../api";
+import gardenerImg from "../assets/Gardener.png";
 
 export default function GetStarted() {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const data = await authAPI.login(phone, password);
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user || {}));
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleStart = () => {
+    // Navigates to the registration/choice page as requested
+    navigate("/register-choice");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-green-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-green-700 mb-2">AquaSense</h1>
-        <p className="text-gray-500 mb-6 text-sm">Smart Irrigation for Punjab Farmers</p>
-        {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Phone Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+    <div className="min-h-screen bg-[#d1d9d4] flex items-center justify-center p-4">
+      {/* Main Card */}
+      <div className="bg-[#f0f1f0] rounded-[30px] shadow-xl p-8 w-full max-w-[350px] flex flex-col items-center border border-white/20">
+        
+        {/* Title */}
+        <h1 className="text-[#2d5a1e] text-4xl font-bold mb-6 tracking-tight">
+          AquaSense
+        </h1>
+
+        {/* Illustration Container */}
+        <div className="w-full aspect-square bg-white rounded-2xl overflow-hidden mb-8 shadow-inner">
+          <img 
+            src={gardenerImg} 
+            alt="Gardener" 
+            className="w-full h-full object-cover"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white rounded-lg py-2 font-semibold hover:bg-green-700 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-        <p className="mt-4 text-sm text-center text-gray-500">
-          New here?{" "}
-          <span className="text-green-600 cursor-pointer" onClick={() => navigate("/create-account")}>
-            Create Account
-          </span>
-        </p>
+        </div>
+
+        {/* Tagline Badge */}
+        <div className="bg-white/80 rounded-full px-6 py-3 mb-12 shadow-sm">
+          <p className="text-gray-500 font-medium text-sm text-center">
+            Smart Irrigation. Real Decisions
+          </p>
+        </div>
+
+        {/* Get Started Button */}
+        <button
+          onClick={handleStart}
+          className="w-full bg-[#2d5a1e] hover:bg-[#244a18] text-white rounded-full py-4 transition-all transform active:scale-95 shadow-lg"
+        >
+          <div className="flex flex-col leading-tight">
+            <span className="text-xl font-bold tracking-wide uppercase">Get Started</span>
+            <span className="text-sm font-normal opacity-90">(आरंभ)</span>
+          </div>
+        </button>
+
+        {/* Bottom Decorative Line */}
+        <div className="w-full h-[1px] bg-gray-300 mt-12 mb-4 opacity-50"></div>
       </div>
     </div>
   );

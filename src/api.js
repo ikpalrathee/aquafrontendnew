@@ -158,7 +158,6 @@ export const villagesAPI = {
 
 // DEVICES
 export const deviceAPI = {
-  // Get existing settings for "Click Here" users
   getSettings: async () => {
     const res = await fetch(`${BASE_URL}/api/v1/devices/settings`, {
       headers: getAuthHeaders(),
@@ -166,12 +165,20 @@ export const deviceAPI = {
     return handleResponse(res);
   },
 
-  // Save new settings when "Continue" is clicked
   setupDevices: async (data) => {
     const res = await fetch(`${BASE_URL}/api/v1/devices/setup`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(data), // Expected: { devices: [{id: 1, pots: 3}, ...] }
+    });
+    return handleResponse(res);
+  },
+
+  saveGardenDetails: async (data) => {
+    const res = await fetch(`${BASE_URL}/api/v1/devices/garden-details`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data), // Expected: [{pot_id: 'd1-p1', plant_type: 'Mint', ...}]
     });
     return handleResponse(res);
   },

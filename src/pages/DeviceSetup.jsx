@@ -57,25 +57,25 @@ export default function DeviceSetup() {
 
   // Function to save data to backend
   const handleContinue = async () => {
-    setLoading(true);
-    try {
-      const payload = {
-        total_devices: numDevices,
-        device_configs: potsPerDevice.map((pots, index) => ({
-          device_id: index + 1,
-          pot_count: pots
-        }))
-      };
+  setLoading(true);
+  try {
+    const payload = {
+      total_devices: numDevices,
+      device_configs: potsPerDevice.map((pots, index) => ({
+        device_id: index + 1,
+        pot_count: pots
+      }))
+    };
       
       // await deviceAPI.setupDevices(payload); // Uncomment when ready
       console.log("Saving to backend:", payload);
-      navigate("/dashboard");
-    } catch (err) {
-      setError("Failed to save settings. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      navigate("/garden-setup", { state: payload });
+  } catch (err) {
+    setError("Failed to save settings. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) return (
     <div className="min-h-screen bg-[#d1d9d4] flex items-center justify-center">
